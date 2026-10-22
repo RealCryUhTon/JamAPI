@@ -178,34 +178,7 @@ function drawSearch(){
   return;
 }
 
-
-//--> AI Assisted / edited to display sidebar visual only if data is valid; intended to happen on tick
-function drawSidebar(){
-  if(dataValid){
-        // --- 1. DRAW SIDEBAR BUTTONS ---
-    // Push matrix so we can translate coordinates locally for scrolling
-    push();
-    translate(0, scrollOffset + topPadding); 
-    for (let btn of bA) {
-      btn.x = sidebarWidth / 2;
-      btn.w = sidebarWidth - 40;
-      btn.display();
-    }
-    pop();
-
-    //call searchbar draw
-    drawSearch();
-    
-    // --- 2. DRAW SIDEBAR OVERLAY BACKGROUND ---
-    // This covers up buttons that scroll past the top/bottom boundaries
-    /*push();
-    fill(200); 
-    noStroke();
-    rect(sidebarWidth, 0, width - sidebarWidth, height);
-    pop();*/
-  
-
-    // --- 3. DRAW THE MAIN LIBRARY CONTENT PANEL ---
+function drawLibrary(){
     push();
     fill(20); 
     noStroke();
@@ -231,6 +204,33 @@ function drawSidebar(){
       textAlign(CENTER, CENTER);
       text("SELECT A GAME JAM FROM THE LIBRARY", sidebarWidth + (width - sidebarWidth)/2, height/2);
     }
+}
+
+
+//--> AI Assisted / edited to display sidebar visual only if data is valid; intended to happen on tick
+function drawSidebar(){
+  if(dataValid){
+        // --- 1. DRAW SIDEBAR BUTTONS ---
+    // Push matrix so we can translate coordinates locally for scrolling
+    push();
+    translate(0, scrollOffset + topPadding); 
+    for (let btn of bA) {
+      btn.x = sidebarWidth / 2;
+      btn.w = sidebarWidth - 40;
+      btn.display();
+    }
+    pop();
+
+    //call searchbar draw
+    
+    
+    // --- 2. DRAW SIDEBAR OVERLAY BACKGROUND ---
+    // This covers up buttons that scroll past the top/bottom boundaries
+    /*push();
+    fill(200); 
+    noStroke();
+    rect(sidebarWidth, 0, width - sidebarWidth, height);
+    pop();*/
   }
 }
 
@@ -317,5 +317,7 @@ function draw() {
   background(230);
 
   drawSidebar();
+  drawSearch();
+  drawLibrary();
   drawFallback();
 }
