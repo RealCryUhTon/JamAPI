@@ -5,6 +5,10 @@
 //BUG; can click game buttons through searchbar overlay
 
 
+//DOM ELEMENTS
+const search = document.getElementById('input[type="search"]');
+
+
 //VARIABLES
 
 let jamID = "416879"; //default jam ID; Bezi Game Jam
@@ -32,6 +36,7 @@ let sidebarWidth = 300;
 
 let searchHeight = 150;
 let searchWidth = sidebarWidth;
+let sVal;
 
 let topPadding = searchHeight + 50;
 
@@ -74,8 +79,10 @@ function handleData(data){
     //map through jam_games, parsing through "url" and extract the jam name dynamically (jam name = Bezi Mega Jam; it != game name).
     jParse = data.jam_games.map(game =>{
       const parts = game.url.split('/');
-
-      return parts[2] ?  parts[2].replace(/-\d+$/, '') : null;
+      
+    //parse through jam names and extract clean title text
+      return parts[2] ?  parts[2].replace(/[-\d]/g, (match)=> match == '-' ? ' ' : '').trim()
+      .replace(/\b\w/g, char => char.toUpperCase()) : null;
     });
 
     jTitle = jParse[0];
@@ -142,6 +149,17 @@ function mousePressed() {
   }
 }
 
+function tryClearSearch(val){
+   if (val === "") {
+    sVal = null;
+  }
+}
+
+function updateSearch(val){
+  
+  return;
+}
+
 
 //APP VISUALS
 
@@ -158,13 +176,14 @@ function drawSearch(){
   //Draw Text
   push();
   fill(255);
-  textSize(32);
+  textSize(22);
   textAlign(LEFT, TOP);
-  text();
+  text(jTitle + ' Library', searchWidth * .05, searchHeight * .35);
   pop();
 
   //Draw searchbar
   push();
+  text(sText, searchWidth * .05, searchHeight * .5);
   pop();
 
   //Draw filter buttons?

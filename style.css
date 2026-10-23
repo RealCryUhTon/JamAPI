@@ -9,3 +9,10 @@ html, body {
   overflow: hidden;
 }
 
+input{
+  position: absolute;
+  font-size: 18px;
+  left: 15px;
+  top: 90px;
+}
+
