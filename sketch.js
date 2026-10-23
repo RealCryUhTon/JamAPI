@@ -27,7 +27,9 @@ let jTitle;
 let gTitle;
 let gText;
 let gAuthor;
+let gDate;
 let gPlat;
+let gCool;
 let gCover = ""; //get cover link
 
 let selectedGame = null;
@@ -109,6 +111,9 @@ function init(){ // init on valid data
       let newB = new Button(20, i * 110 + 20, 210, 90, gameName, callGame, gameObject);
       bA.push(newB)
     }
+
+    //set gCover initally to help with Do Once logic for updateGCover()
+    gCover = "";
 
   }else{
     let canvas = createCanvas(windowWidth, windowHeight);
@@ -197,34 +202,7 @@ function drawSearch(){
   return;
 }
 
-
-//--> AI Assisted / edited to display sidebar visual only if data is valid; intended to happen on tick
-function drawSidebar(){
-  if(dataValid){
-        // --- 1. DRAW SIDEBAR BUTTONS ---
-    // Push matrix so we can translate coordinates locally for scrolling
-    push();
-    translate(0, scrollOffset + topPadding); 
-    for (let btn of bA) {
-      btn.x = sidebarWidth / 2;
-      btn.w = sidebarWidth - 40;
-      btn.display();
-    }
-    pop();
-
-    //call searchbar draw
-    drawSearch();
-    
-    // --- 2. DRAW SIDEBAR OVERLAY BACKGROUND ---
-    // This covers up buttons that scroll past the top/bottom boundaries
-    /*push();
-    fill(200); 
-    noStroke();
-    rect(sidebarWidth, 0, width - sidebarWidth, height);
-    pop();*/
-  
-
-    // --- 3. DRAW THE MAIN LIBRARY CONTENT PANEL ---
+function drawLibrary(){
     push();
     fill(20); 
     noStroke();
@@ -234,22 +212,77 @@ function drawSidebar(){
     // Display details of the active game
     if (selectedGame) {
       fill(255);
-      textSize(32);
+      textSize(48);
       textAlign(LEFT, TOP);
       text(selectedGame.game.title, sidebarWidth + 40, 40);
+      gTitle = selectedGame.game.title;
       
-      // Add additional properties here from your nested object
-      textSize(16);
-      text(`Game ID: ${selectedGame.id}`, sidebarWidth + 40, 90);
+      textSize(20);
+      text(`Made By: ${selectedGame.game.user.name || "Unknown Author"}`, sidebarWidth + 40, 100);
+      gAuthor = selectedGame.game.user.name;
 
-      textSize(16);
-      text(`${selectedGame.game.short_text || "No description :( "}`, sidebarWidth + 40, 120);
+      textSize(20);
+      text(`${selectedGame.game.short_text || "No description :( "}`, sidebarWidth + 40, 140, 500, 800);
+      gText = selectedGame.game.short_text
+
+      textSize(20);
+      text(`Submitted On: ${selectedGame.created_at || "Unknown Submission Date"}`, sidebarWidth + 40, 200);
+      gDate = selectedGame.created_at;
+
+      textSize(20);
+      text(`Platform: ${selectedGame.game.platforms || "Unknown Available Platform"}`, sidebarWidth + 40, 240);
+      gPlat = selectedGame.game.platforms;
+
+      textSize(20);
+      text(`Coolness: ${selectedGame.coolness || "Not Cool at All"}`, sidebarWidth + 40, 300);
+      gCool = selectedGame.coolness;
+
+      //gCover = selectedGame.game.cover;
+      updateGCover();
+
+
+
     } else {
       fill(150);
       textSize(20);
       textAlign(CENTER, CENTER);
       text("SELECT A GAME JAM FROM THE LIBRARY", sidebarWidth + (width - sidebarWidth)/2, height/2);
     }
+}
+
+function updateGCover(){
+  if(gCover != selectedGame.game.cover){
+    gCover = selectedGame.game.cover;
+
+    img = loadImage("https://static.vecteezy.com/vite/assets/photo-masthead-375-BoK_p8LG.webp");
+
+    drawGCover(img);
+  }else{
+    console.log("IMAGE BEING DISPLAYED");
+  }
+}
+
+function drawGCover(img){
+  if(img){
+    image(img, sidebarWidth + (width - sidebarWidth)/2, height/2);
+  }else{
+    img = null;
+    image(img, sidebarWidth + (width - sidebarWidth)/2, height/2);
+  }
+}
+
+
+//--> AI Assisted / edited to display sidebar visual only if data is valid; intended to happen on tick
+function drawSidebar(){
+  if(dataValid){
+    push();
+    translate(0, scrollOffset + topPadding); 
+    for (let btn of bA) {
+      btn.x = sidebarWidth / 2;
+      btn.w = sidebarWidth - 40;
+      btn.display();
+    }
+    pop();
   }
 }
 
@@ -325,7 +358,12 @@ class Button {
 
 
 
-//DEFAULT P5.JS METHODS
+//RUNTIME METHODS
+
+function windowResized(){
+  resizeCanvas(windowWidth, windowHeight);
+
+}
 
 function setup() {
   init();
@@ -336,5 +374,7 @@ function draw() {
   background(230);
 
   drawSidebar();
+  drawSearch();
+  drawLibrary();
   drawFallback();
 }
