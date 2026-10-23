@@ -7,6 +7,7 @@
 
 //DOM ELEMENTS
 const search = document.getElementById('input[type="search"]');
+const searchB = document.getElementById('searchID');
 
 
 //VARIABLES
@@ -30,7 +31,10 @@ let gAuthor;
 let gDate;
 let gPlat;
 let gCool;
-let gCover = ""; //get cover link
+let gImg;
+let gCover = ""; // --> this would ideally be a dynamic variable, set by the jam API.
+let gLink;
+let directB;
 
 let selectedGame = null;
 let scrollOffset = 0;
@@ -108,7 +112,7 @@ function init(){ // init on valid data
       let gameObject = apiResult[i];
       let gameName = gameObject.game.title || "Untitled Game";
 
-      let newB = new Button(20, i * 110 + 20, 210, 90, gameName, callGame, gameObject);
+      let newB = new Button(20, i * 110 + 20, 210, 90, gameName, callGame, gameObject, true);
       bA.push(newB)
     }
 
@@ -148,15 +152,9 @@ function callGame(){
   return;
 }
 
-function mousePressed() {
-  for (let b of bA) {
-    b.checkClick();
-  }
-}
-
 function tryClearSearch(val){
    if (val === "") {
-    sVal = null;
+    sVal = '';
   }
 }
 
@@ -203,6 +201,8 @@ function drawSearch(){
 }
 
 function drawLibrary(){
+  let cPaddingY = 40;
+  let cPaddingX = sidebarWidth + 40;  
     push();
     fill(40); 
     noStroke();
@@ -214,31 +214,35 @@ function drawLibrary(){
       fill(255);
       textSize(48);
       textAlign(LEFT, TOP);
-      text(selectedGame.game.title, sidebarWidth + 40, 40);
+      text(selectedGame.game.title, cPaddingX, cPaddingY);
       gTitle = selectedGame.game.title;
-      
+
+      textSize(36);
+      text(`Rating: ${selectedGame.rating_count || "Unrated"}`, cPaddingX, cPaddingY * 3);
+
+
       textSize(20);
-      text(`Made By: ${selectedGame.game.user.name || "Unknown Author"}`, sidebarWidth + 40, 100);
+      text(`Made By: ${selectedGame.game.user.name || "Unknown Author"}`, cPaddingX, cPaddingY * 4.6);
       gAuthor = selectedGame.game.user.name;
 
       textSize(20);
-      text(`${selectedGame.game.short_text || "No description :( "}`, sidebarWidth + 40, 140, 500, 800);
-      gText = selectedGame.game.short_text
-
-      textSize(20);
-      text(`Submitted On: ${selectedGame.created_at || "Unknown Submission Date"}`, sidebarWidth + 40, 200);
+      text(`Submitted On: ${selectedGame.created_at || "Unknown Submission Date"}`, cPaddingX * 1.8, cPaddingY * 4.6);
       gDate = selectedGame.created_at;
 
       textSize(20);
-      text(`Platform: ${selectedGame.game.platforms || "Unknown Available Platform"}`, sidebarWidth + 40, 240);
+      text(`Platform: ${selectedGame.game.platforms || "Unknown Available Platform"}`, cPaddingX * 3, cPaddingY * 4.6);
       gPlat = selectedGame.game.platforms;
 
       textSize(20);
-      text(`Coolness: ${selectedGame.coolness || "Not Cool at All"}`, sidebarWidth + 40, 300);
+      text(`Coolness: ${selectedGame.coolness || "Not Cool at All"}`, cPaddingX * 4.25, cPaddingY * 4.6);
       gCool = selectedGame.coolness;
 
-      //gCover = selectedGame.game.cover;
+      textSize(20);
+      text(`${selectedGame.game.short_text || "No description :( "}`, cPaddingX, cPaddingY * 6, 600, 800);
+      gText = selectedGame.game.short_text
+
       updateGCover();
+      updateGLink();
 
 
 
@@ -254,21 +258,40 @@ function updateGCover(){
   if(gCover != selectedGame.game.cover){
     gCover = selectedGame.game.cover;
 
-    img = loadImage("https://static.vecteezy.com/vite/assets/photo-masthead-375-BoK_p8LG.webp");
-
-    drawGCover(img);
+    // this is where we would have set the game cover via API
+    gImg = loadImage("https://static.itch.io/images/app-icon.png"); 
   }else{
     console.log("IMAGE BEING DISPLAYED");
+    drawGCover(gImg);
   }
 }
 
-function drawGCover(img){
-  if(img){
-    image(img, sidebarWidth + (width - sidebarWidth)/2, height/2);
+function drawGCover(gImg){
+  if(gImg){
+    image(gImg, sidebarWidth * 3, height/2, 300, 300);
   }else{
-    img = null;
-    image(img, sidebarWidth + (width - sidebarWidth)/2, height/2);
+    gImg = null;
+    image(gImg, 0, 0);
   }
+}
+
+function updateGLink(){
+  if(gLink != selectedGame.game.url){
+    gLink = selectedGame.game.url;
+  }else{
+    drawGLink();
+  }
+}
+
+function drawGLink(){
+  if(gLink){
+    directB = new Button(sidebarWidth * 3.5, height / 2.3, 210, 90, "Play Now", openGame, null);
+    directB.display();
+  }
+}
+
+function openGame(){
+  window.open(gLink, "_blank");
 }
 
 
@@ -300,11 +323,9 @@ function drawFallback(){
     }
 }
 
-
-
 //GENERIC
 class Button {
-  constructor(x, y, w, h, label, onClickAction, rawData) {
+  constructor(x, y, w, h, label, onClickAction, rawData, scrollable = false) {
     this.x = x;
     this.y = y;
     this.w = w;
@@ -312,6 +333,7 @@ class Button {
     this.label = label;
     this.onClickAction = onClickAction;
     this.raw = rawData;
+    this.scrollable = scrollable;
 
     this.baseColor = color(240);
     this.hoverColor = color(200);
@@ -319,6 +341,7 @@ class Button {
   }
 
   display() {
+    push();
     let isHovered = this.isMouseOver();
     
     fill(isHovered ? this.hoverColor : this.baseColor);
@@ -333,10 +356,15 @@ class Button {
     textAlign(CENTER, CENTER);
     textSize(16);
     text(this.label, this.x, this.y);
+    pop();
   }
 
   isMouseOver() {
-    let sY = this.y + scrollOffset + topPadding;
+    let sY = this.y;
+
+    if(this.scrollable){
+      sY += scrollOffset + topPadding;
+    }
     return (
       mouseX > this.x - this.w / 2 &&
       mouseX < this.x + this.w / 2 &&
@@ -351,6 +379,16 @@ class Button {
 
       selectedGame = this.raw
     }
+  }
+}
+
+function mousePressed() {
+  for (let b of bA) {
+    b.checkClick();
+  }
+
+  if(directB){
+    directB.checkClick();
   }
 }
 
@@ -373,8 +411,12 @@ function setup() {
 function draw() {
   background(230);
 
-  drawSidebar();
-  drawSearch();
-  drawLibrary();
-  drawFallback();
+  if(dataValid){
+    drawSidebar();
+    drawSearch();
+    drawLibrary();
+  }else{
+    drawFallback();
+    searchB.remove();//--> ideally if this API was dyanmic, this would only hide the DOM element, and reshow it when a valid jam ID was given
+  }
 }
