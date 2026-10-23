@@ -188,7 +188,7 @@ function drawSearch(){
 
   //Draw searchbar
   push();
-  text(sText, searchWidth * .05, searchHeight * .5);
+  text(sVal, searchWidth * .05, searchHeight * .5);
   pop();
 
   //Draw filter buttons?
@@ -204,7 +204,7 @@ function drawSearch(){
 
 function drawLibrary(){
     push();
-    fill(20); 
+    fill(40); 
     noStroke();
     rect(sidebarWidth, 0, width - sidebarWidth, height);
     pop();
