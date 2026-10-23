@@ -6,7 +6,7 @@
 
 
 //DOM ELEMENTS
-const search = document.getElementById('input[type="search"]');
+const search = document.querySelector('input[type="search"]');
 const searchB = document.getElementById('searchID');
 
 
@@ -42,11 +42,12 @@ let sidebarWidth = 300;
 
 let searchHeight = 150;
 let searchWidth = sidebarWidth;
-let sVal;
+let sVal = '';
 
 let topPadding = searchHeight + 50;
 
 let bA = [];
+let allB = [];
 
 
 //APP METHODS
@@ -114,37 +115,23 @@ function init(){ // init on valid data
 
       let newB = new Button(20, i * 110 + 20, 210, 90, gameName, callGame, gameObject, true);
       bA.push(newB)
+      allB.push(newB);
     }
 
     //set gCover initally to help with Do Once logic for updateGCover()
     gCover = "";
 
+
+    if(search){
+      search.addEventListener('input', function (){
+        updateSearch(this.value);
+      });
+
+    }
+
   }else{
     let canvas = createCanvas(windowWidth, windowHeight);
     canvas.id("canvas");
-  }
-}
-
-
-function preload(){
-    if(apiActive){
-    loadJSON(getAPIURL(), handleData);
-  }
-}
-
-function mouseWheel(event) {
-
-  if (mouseX < sidebarWidth) {
-    scrollOffset -= event.delta;
-    
-    // Constraint: Prevent scrolling too far up
-    scrollOffset = min(scrollOffset, 0);
-    
-    // Constraint: Prevent scrolling past the last item
-    let totalContentHeight = bA.length * 110 + topPadding;
-    if (totalContentHeight > height) {
-      scrollOffset = max(scrollOffset, height - totalContentHeight);
-    }
   }
 }
 
@@ -158,9 +145,21 @@ function tryClearSearch(val){
   }
 }
 
+//--> AI Generated; tied the search fucntionality into the defined values of the script
 function updateSearch(val){
-  
-  return;
+  sVal = val.trim().toLowerCase();
+
+  bA = allB.filter(function (button) {
+    return button.label.toLowerCase().includes(sVal);
+  });
+
+  // Reposition the filtered buttons
+  for (let i = 0; i < bA.length; i++) {
+    bA[i].y = i * 110 + 20;
+  }
+
+  // Reset scrolling after a new search
+  scrollOffset = 0;
 }
 
 
@@ -182,11 +181,6 @@ function drawSearch(){
   textSize(22);
   textAlign(LEFT, TOP);
   text(jTitle + ' Library', searchWidth * .05, searchHeight * .35);
-  pop();
-
-  //Draw searchbar
-  push();
-  text(sVal, searchWidth * .05, searchHeight * .5);
   pop();
 
   //Draw filter buttons?
@@ -285,7 +279,7 @@ function updateGLink(){
 
 function drawGLink(){
   if(gLink){
-    directB = new Button(sidebarWidth * 3.5, height / 2.3, 210, 90, "Play Now", openGame, null);
+    directB = new Button(sidebarWidth * 3.5, height / 2.3, 210, 90, "Play Now", openGame, selectedGame);
     directB.display();
   }
 }
@@ -392,11 +386,33 @@ function mousePressed() {
   }
 }
 
+function mouseWheel(event) {
+
+  if (mouseX < sidebarWidth) {
+    scrollOffset -= event.delta;
+    
+    // Constraint: Prevent scrolling too far up
+    scrollOffset = min(scrollOffset, 0);
+    
+    // Constraint: Prevent scrolling past the last item
+    let totalContentHeight = bA.length * 110 + topPadding;
+    if (totalContentHeight > height) {
+      scrollOffset = max(scrollOffset, height - totalContentHeight);
+    }
+  }
+}
+
 
 
 
 
 //RUNTIME METHODS
+
+function preload(){
+    if(apiActive){
+    loadJSON(getAPIURL(), handleData);
+  }
+}
 
 function windowResized(){
   resizeCanvas(windowWidth, windowHeight);
