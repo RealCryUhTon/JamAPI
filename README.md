@@ -8,3 +8,5 @@ _The itch.io image used in the project was sourced from [Here](https://static.it
 ![itch.io image](https://static.itch.io/images/app-icon.png)
 
 
+# BACKGROUND
+The creation of the project was assisted with AI. Specifically, some parts of the visualization functionality like the entry library and scrollbar. I used the AI generated blocks of code as reference to alter and create my own other pieces of functional visuals. For example, the search bar, additional game details like date submitted, coolness, and overall rating was done by hand (game name and description display was coded by AI). Furthermore, the JSON API handling was done by hand as well. The separation of code blocks, into respective draw calls, gets and sets, the init() block, data valid checks, and the invalid data error fallback page was done by hand.   
