@@ -22,8 +22,8 @@ let gCover = ""; //get cover link
 let selectedGame = null;
 let selectedCover = null;
 let books = [];
-let scrollOffset = 0;
-let shelfColumns = 1;
+let booksPerPage = 1;
+let currentPage = 0;
 
 let bA = [];
 
@@ -86,35 +86,40 @@ function init(){ // init on valid data
   }
 
   const palette = ["#b84a3a", "#315c68", "#d39b35", "#4d7050", "#654b72", "#d06d45", "#426c9b"];
-  const slotWidth = (width - 48) / shelfColumns;
+  const availableWidth = max(60, width - 112);
+  booksPerPage = max(1, floor(availableWidth / 60));
+  const slotWidth = availableWidth / booksPerPage;
 
   books = apiResult.map((entry, index) => {
     const title = entry.game && entry.game.title ? entry.game.title : "Untitled Game";
     const titleHash = title.split("").reduce((total, character) => total + character.charCodeAt(0), 0);
-    const row = Math.floor(index / shelfColumns);
-    const column = index % shelfColumns;
+    const column = index % booksPerPage;
     const bookWidth = min(52, max(32, slotWidth - 8));
     const bookHeight = 140 + (titleHash % 7) * 6;
-    const x = 24 + column * slotWidth + slotWidth / 2;
-    const shelfY = 75 + row * 220 + 180;
+    const x = 56 + column * slotWidth + slotWidth / 2;
+    const shelfY = 255;
 
     return new book(x, shelfY - bookHeight / 2, bookWidth, bookHeight, title, palette[(titleHash + index) % palette.length], entry);
   });
+
+  currentPage = min(currentPage, max(0, getPageCount() - 1));
 }
 
 function setup() {
+  // create and initialize the canvas
   const canvas = createCanvas(windowWidth, windowHeight);
   canvas.id("canvas");
-  shelfColumns = max(1, floor((width - 40) / 60));
   init();
 }
 
 function draw() {
+  // clear the background
   background("#e8dfcf");
   noStroke();
   fill("#283c3b");
   textAlign(LEFT, CENTER);
   textSize(22);
+  // draw the bookshelf title
   text(jTitle ? `${jTitle} bookshelf` : "Generative bookshelf", 24, 34);
   
   // draw the bookshelf title
@@ -124,31 +129,64 @@ function draw() {
     text("Loading game entries...", 24, 72);
     return;
   }
+  // draw the bookshelf
+  const shelfY = 255;
+  noStroke();
+  fill("#76543b");
+  rectMode(CENTER);
+  rect(width / 2, shelfY + 7, width - 32, 14, 3);
+  fill("#9a704b");
+  rect(width / 2, shelfY, width - 32, 5, 2);
 
-  // calculate the number of rows needed for the bookshelf
-  const rowCount = Math.ceil(books.length / shelfColumns);
-  push();
-  translate(0, scrollOffset);
-
-  // draw shelves
-  for (let row = 0; row < rowCount; row++) {
-    const shelfY = 75 + row * 220 + 180;
-    noStroke();
-    fill("#76543b");
-    rectMode(CENTER);
-    rect(width / 2, shelfY + 7, width - 32, 14, 3);
-    fill("#9a704b");
-    rect(width / 2, shelfY, width - 32, 5, 2);
-  }
-  // draw books
-  for (const gameBook of books) {
+  // draw the books on the shelf
+  const firstBook = currentPage * booksPerPage;
+  const visibleBooks = books.slice(firstBook, firstBook + booksPerPage);
+  for (const gameBook of visibleBooks) {
     gameBook.display();
   }
-  pop();
+  drawPageNavigation();
+
   // draw game details if a game is selected
   if (selectedGame) {
     drawGameDetails();
   }
+}
+
+// get the total number of pages based on the number of books and books per page
+function getPageCount() {
+  return Math.ceil(books.length / booksPerPage);
+}
+
+// draw the page navigation buttons
+function drawPageNavigation() {
+  // define the position and size of the navigation buttons
+  const buttonY = 180;
+  const buttonRadius = 18;
+  const pageCount = getPageCount();
+  const previousEnabled = currentPage > 0;
+  const nextEnabled = currentPage < pageCount - 1;
+  // draw the previous and next page buttons
+  for (const button of [
+    { x: 24, direction: -1, enabled: previousEnabled },
+    { x: width - 24, direction: 1, enabled: nextEnabled }
+  ]) {
+    // draw each navigation button
+    noStroke();
+    fill(button.enabled ? "#f5efe2" : "#d9d0bf");
+    circle(button.x, buttonY, buttonRadius * 2);
+    // draw the arrow inside the navigation button
+    stroke(button.enabled ? "#283c3b" : "#8b9188");
+    strokeWeight(3);
+    const arrowX = button.x + button.direction * 3;
+    line(arrowX, buttonY - 7, button.x - button.direction * 4, buttonY);
+    line(button.x - button.direction * 4, buttonY, arrowX, buttonY + 7);
+  }
+  // draw the current page number and total page count
+  noStroke();
+  fill("#52615b");
+  textAlign(CENTER, CENTER);
+  textSize(14);
+  text(`${pageCount ? currentPage + 1 : 0} / ${pageCount}`, width / 2, 292);
 }
 
 // handle mouse press events
@@ -169,8 +207,20 @@ function mousePressed() {
     return;
   }
   // check if any book was clicked
-  for (const gameBook of books) {
-    if (gameBook.contains(mouseX, mouseY - scrollOffset)) {
+  const buttonY = 180;
+  if (dist(mouseX, mouseY, 24, buttonY) <= 18 && currentPage > 0) {
+    currentPage--;
+    return;
+  }
+  if (dist(mouseX, mouseY, width - 24, buttonY) <= 18 && currentPage < getPageCount() - 1) {
+    currentPage++;
+    return;
+  }
+
+  const firstBook = currentPage * booksPerPage;
+  const visibleBooks = books.slice(firstBook, firstBook + booksPerPage);
+  for (const gameBook of visibleBooks) {
+    if (gameBook.contains(mouseX, mouseY)) {
       openGameDetails(gameBook.entry);
       return;
     }
@@ -284,14 +334,17 @@ function drawGameDetails() {
   const layout = getGameDetailsLayout();
   const { panelWidth, panelHeight, panelLeft, panelTop } = layout;
 
+  // draw the semi-transparent overlay background
   noStroke();
   fill(20, 150);
   rectMode(CORNER);
   rect(0, 0, width, height);
 
+  // draw the semi-transparent background overlay
   fill("#f5efe2");
   rect(panelLeft, panelTop, panelWidth, panelHeight, 8);
 
+  // draw the panel background
   fill("#283c3b");
   textAlign(LEFT, TOP);
   textSize(21);
@@ -309,13 +362,14 @@ function drawGameDetails() {
     textSize(14);
     text("No cover art", layout.coverX, layout.coverY, layout.coverWidth, layout.coverHeight);
   }
-
+  // draw the contributors and description text
   fill("#394846");
   textAlign(LEFT, TOP);
   textSize(16);
   text(layout.contributorLines.join("\n"), layout.textX, layout.contributorsY);
   text(layout.descriptionLines.join("\n"), layout.textX, layout.descriptionY);
 
+  // draw the close button for the game details panel
   fill("#283c3b");
   textAlign(CENTER, CENTER);
   textSize(22);
@@ -327,24 +381,10 @@ function preload() {
   loadJSON(getAPIURL(), handleData);
 }
 
-  // handle mouse wheel events for scrolling
-function mouseWheel(event) {
-  if (mouseY < 60 || !dataValid) {
-    return;
-  }
-
-  const contentHeight = Math.ceil(books.length / shelfColumns) * 220 + 75;
-  scrollOffset = constrain(scrollOffset - event.delta, min(0, height - contentHeight), 0);
-  return false;
-}
-
   // handle window resize events
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-  shelfColumns = max(1, floor((width - 40) / 60));
   init();
-  const contentHeight = Math.ceil(books.length / shelfColumns) * 220 + 75;
-  scrollOffset = constrain(scrollOffset, min(0, height - contentHeight), 0);
 }
 
 class book {
