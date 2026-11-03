@@ -129,7 +129,20 @@ function draw() {
     fill("#000000");
     rectMode(CENTER);
     rect(width / 2, 425, 400, 250, 5);
- 
+
+    //computer screen
+    const screen = getComputerScreenLayout();
+    noStroke();
+    fill("#d9e8dc");
+    rectMode(CORNER);
+    rect(screen.panelLeft, screen.panelTop, screen.panelWidth, screen.panelHeight, 3);
+    if (!selectedGame) {
+      fill("#52615b");
+      textAlign(CENTER, CENTER);
+      textSize(14);
+      text("Select a game to view details", width / 2, screen.panelTop + screen.panelHeight / 2);
+    }
+
     //desk
     fill("#76543b");
     rectMode(CENTER);
@@ -152,6 +165,15 @@ function draw() {
 
 function getPageCount() {
   return Math.ceil(books.length / booksPerPage);
+}
+
+function getComputerScreenLayout() {
+  return {
+    panelWidth: 368,
+    panelHeight: 218,
+    panelLeft: width / 2 - 184,
+    panelTop: 316
+  };
 }
 
 function drawPageNavigation() {
@@ -198,11 +220,9 @@ function mousePressed() {
   // check if a game is currently selected
   if (selectedGame) {
     const layout = getGameDetailsLayout();
-    const closeX = layout.panelLeft + layout.panelWidth - 28;
-    const closeY = layout.panelTop + 28;
 
     // check if the close button or outside the panel was clicked
-    if (dist(mouseX, mouseY, closeX, closeY) < 20 ||
+    if (dist(mouseX, mouseY, layout.closeX, layout.closeY) < 12 ||
       mouseX < layout.panelLeft || mouseX > layout.panelLeft + layout.panelWidth ||
       mouseY < layout.panelTop || mouseY > layout.panelTop + layout.panelHeight) {
       selectedGame = null;
@@ -230,6 +250,183 @@ function mousePressed() {
     }
   }
 }
+
+function keyPressed() {
+  if (keyCode === ESCAPE) {
+    selectedGame = null;
+    selectedCover = null;
+  }
+}
+
+function openGameDetails(entry) {
+  selectedGame = entry;
+  selectedCover = null;
+
+   const coverUrl = entry.game && entry.game.cover;
+  if (coverUrl) {
+    loadImage(coverUrl, imageAsset => {
+      if (selectedGame === entry) {
+        selectedCover = imageAsset;
+      }
+    });
+  }
+}
+
+function getGameContributors(game) {
+  const contributors = game.contributors || game.users || game.user;
+  const people = Array.isArray(contributors) ? contributors : contributors ? [contributors] : [];
+  const names = people
+    .map(person => typeof person === "string" ? person : person.name)
+    .filter(Boolean);
+
+  return names.length ? names.join(", ") : "Unknown contributor";
+}
+
+function wrapDetailsText(value, maxWidth, fontSize) {
+  push();
+  textSize(fontSize);
+  const lines = [];
+  let currentLine = "";
+
+  // split the text into words and wrap them into lines based on the max width
+  for (const word of String(value).split(/\s+/)) {
+    const candidate = currentLine ? `${currentLine} ${word}` : word;
+    if (currentLine && textWidth(candidate) > maxWidth) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = candidate;
+    }
+  }
+
+  lines.push(currentLine || " ");
+  pop();
+  return lines;
+}
+
+function getGameDetailsLayout() {
+  const { panelWidth, panelHeight, panelLeft, panelTop } = getComputerScreenLayout();
+  const gameTitle = selectedGame.game && selectedGame.game.title ? selectedGame.game.title : "Untitled Game";
+  const description = selectedGame.game && selectedGame.game.short_text
+    ? selectedGame.game.short_text
+    : "No description :(";
+  const contributors = getGameContributors(selectedGame.game || {});
+  const titleFontSize = 16;
+  const titleWidth = panelWidth - 48;
+  const titleLines = limitDetailsLines(
+    wrapDetailsText(gameTitle, titleWidth, titleFontSize),
+    2,
+    titleWidth,
+    titleFontSize
+  );
+  const contentTop = 10 + titleLines.length * 19 + 6;
+  const coverWidth = 88;
+  const coverHeight = 88;
+  const textWidth = panelWidth - coverWidth - 34;
+  const contributorFontSize = 12;
+  const contributorLineHeight = 15;
+  const contributorLines = limitDetailsLines(
+    wrapDetailsText(`Contributors: ${contributors}`, textWidth, contributorFontSize),
+    2,
+    textWidth,
+    contributorFontSize
+  );
+  const contributorsY = panelTop + contentTop;
+  const descriptionY = contributorsY + contributorLines.length * contributorLineHeight + 5;
+  const descriptionLineHeight = 15;
+  const descriptionMaxLines = max(1, floor((panelTop + panelHeight - 10 - descriptionY) / descriptionLineHeight));
+  const descriptionLines = limitDetailsLines(
+    wrapDetailsText(description, textWidth, contributorFontSize),
+    descriptionMaxLines,
+    textWidth,
+    contributorFontSize
+  );
+
+  return {
+    panelWidth,
+    panelHeight,
+    panelLeft,
+    panelTop,
+    titleLines,
+    coverX: panelLeft + 12,
+    coverY: panelTop + contentTop,
+    coverWidth,
+    coverHeight,
+    titleX: panelLeft + 12,
+    titleY: panelTop + 8,
+    titleFontSize,
+    textX: panelLeft + 12 + coverWidth + 10,
+    textWidth,
+    contributorsY,
+    descriptionY,
+    contributorFontSize,
+    descriptionFontSize: contributorFontSize,
+    closeX: panelLeft + panelWidth - 14,
+    closeY: panelTop + 14,
+    contributorLines,
+    descriptionLines
+  };
+}
+
+function limitDetailsLines(lines, maxLines, maxWidth, fontSize) {
+  if (lines.length <= maxLines) {
+    return lines;
+  }
+
+  const visibleLines = lines.slice(0, maxLines);
+  let lastLine = visibleLines[maxLines - 1];
+  push();
+  textSize(fontSize);
+  while (lastLine && textWidth(`${lastLine}...`) > maxWidth) {
+    lastLine = lastLine.slice(0, -1).trimEnd();
+  }
+  pop();
+  visibleLines[maxLines - 1] = `${lastLine}...`;
+  return visibleLines;
+}
+
+function drawGameDetails() {
+  const layout = getGameDetailsLayout();
+  const { panelWidth, panelHeight, panelLeft, panelTop } = layout;
+
+  noStroke();
+  fill("#d9e8dc");
+  rectMode(CORNER);
+  rect(panelLeft, panelTop, panelWidth, panelHeight, 3);
+
+  // draw the game title on the computer screen
+  fill("#283c3b");
+  textAlign(LEFT, TOP);
+  textSize(layout.titleFontSize);
+  text(layout.titleLines.join("\n"), layout.titleX, layout.titleY);
+
+  // draw the cover art or placeholder for the selected game
+  if (selectedCover) {
+    imageMode(CORNER);
+    image(selectedCover, layout.coverX, layout.coverY, layout.coverWidth, layout.coverHeight);
+  } else {
+    fill("#d9d0bf");
+    rect(layout.coverX, layout.coverY, layout.coverWidth, layout.coverHeight, 4);
+    fill("#52615b");
+    textAlign(CENTER, CENTER);
+    textSize(14);
+    text("No cover art", layout.coverX, layout.coverY, layout.coverWidth, layout.coverHeight);
+  }
+  // draw the contributors and description beside the cover
+  fill("#394846");
+  textAlign(LEFT, TOP);
+  textSize(layout.contributorFontSize);
+  text(layout.contributorLines.join("\n"), layout.textX, layout.contributorsY);
+  textSize(layout.descriptionFontSize);
+  text(layout.descriptionLines.join("\n"), layout.textX, layout.descriptionY);
+
+  // draw the close button on the screen
+  fill("#283c3b");
+  textAlign(CENTER, CENTER);
+  textSize(18);
+  text("×", layout.closeX, layout.closeY);
+}
+
 
 class book {
 constructor(x, y, w, h, label, coverColor, entry) {
