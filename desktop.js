@@ -71,7 +71,20 @@ function init(){
   if(!dataValid){
     return;
   }
-  const palette = ["#b84a3a", "#315c68", "#d39b35", "#4d7050", "#654b72", "#d06d45", "#426c9b"];
+  
+  cover1 = loadImage("Books/BookBase1.png");
+  cover2 = loadImage("Books/BookBase2.png");
+  cover3 = loadImage("Books/BookBase3.png");
+  cover4 = loadImage("Books/BookBase4.png");
+  cover5 = loadImage("Books/BookBase5.png");
+  accent1 = loadImage("Books/Accent1.png");
+  accent2 = loadImage("Books/Accent2.png");
+  accent3 = loadImage("Books/Accent3.png");
+  accent4 = loadImage("Books/Accent4.png");
+  accent5 = loadImage("Books/Accent5.png");
+
+  const coverColors = [cover1, cover2, cover3, cover4, cover5];
+  const accents = [accent1, accent2, accent3, accent4, accent5];
   const availableWidth = max(60, width - 112);
   booksPerPage = max(1, floor(availableWidth / 60));
   const slotWidth = availableWidth / booksPerPage;
@@ -85,7 +98,7 @@ function init(){
     const x = 56 + column * slotWidth + slotWidth / 2;
     const shelfY = 255;
 
-    return new book(x, shelfY - bookHeight / 2, bookWidth, bookHeight, title, palette[(titleHash + index) % palette.length], entry);
+    return new book(x, shelfY - bookHeight / 2, bookWidth, bookHeight, title, coverColors[(titleHash + index) % coverColors.length], accents[(titleHash + index) % accents.length], entry);
   });
 
   currentPage = min(currentPage, max(0, getPageCount() - 1));
@@ -209,6 +222,8 @@ function drawPageNavigation() {
 
 function preload() {
   loadJSON(getAPIURL(), handleData);
+
+
 }
 
 function windowResized() {
@@ -272,6 +287,7 @@ function openGameDetails(entry) {
   }
 }
 
+// Utility function to get the contributors of a game
 function getGameContributors(game) {
   const contributors = game.contributors || game.users || game.user;
   const people = Array.isArray(contributors) ? contributors : contributors ? [contributors] : [];
@@ -429,13 +445,14 @@ function drawGameDetails() {
 
 
 class book {
-constructor(x, y, w, h, label, coverColor, entry) {
+constructor(x, y, w, h, label, coverColor,accent, entry) {
     this.x = x;
     this.y = y;
     this.w = w;
     this.h = h;
     this.label = label;
     this.coverColor = coverColor;
+    this.accent = accent;
     this.entry = entry;
   }
 
@@ -447,14 +464,17 @@ constructor(x, y, w, h, label, coverColor, entry) {
   display() {
     // draw the book cover
     noStroke();
-    fill(this.coverColor);
-    rectMode(CENTER);
-    rect(this.x, this.y, this.w, this.h, 3);
+    imageMode(CENTER);
+    image(this.coverColor, this.x, this.y, this.w, this.h);
 
     // draw the spine line of the book
     stroke(255, 90);
     strokeWeight(1);
     line(this.x - this.w / 2 + 4, this.y - this.h / 2 + 5, this.x - this.w / 2 + 4, this.y + this.h / 2 - 5);
+
+    // draw the lower accent on the book cover
+    imageMode(CENTER);
+    image(this.accent, this.x, this.y, this.w, this.h);
 
     // draw the label on the spine of the book
     noStroke();
