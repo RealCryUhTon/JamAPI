@@ -226,6 +226,7 @@ function mousePressed() {
     }
   }
 }
+
   // handle key press events
 function keyPressed() {
   if (keyCode === ESCAPE) {
@@ -233,6 +234,7 @@ function keyPressed() {
     selectedCover = null;
   }
 }
+
 
 
   // open the game details panel for the selected game
